@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import * as cheerio from 'cheerio';
+import Mercury from '@postlight/mercury-parser';
+import { errorResponse } from '@/utils/errors';
 
 export async function POST(req: Request) {
   try {
@@ -9,65 +10,25 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'URL is required' }, { status: 400 });
     }
 
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-      }
+    const article = await Mercury.parse(url);
+    
+    if (!article || !article.content) {
+      throw new Error('Failed to extract article content');
+    }
+
+    // Convert HTML content to plain text (optional)
+    const content = article.content.replace(/<[^>]+>/g, '').trim();
+
+    return NextResponse.json({
+      title: article.title,
+      content,
+      author: article.author,
+      excerpt: article.excerpt,
+      date_published: article.date_published,
     });
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch article: ${response.statusText}`);
-    }
-
-    const html = await response.text();
-    const $ = cheerio.load(html);
-
-    // Remove script and style elements
-    $('script').remove();
-    $('style').remove();
-
-    // Try to find the main article content
-    let content = '';
-    
-    // Common article content selectors
-    const selectors = [
-      'article',
-      'main',
-      '.article-content',
-      '.post-content',
-      '.entry-content',
-      '#content',
-      '.content',
-      'article .content',
-      '.article-body',
-      '.story-content'
-    ];
-
-    for (const selector of selectors) {
-      const element = $(selector);
-      if (element.length > 0) {
-        content = element.text().trim();
-        break;
-      }
-    }
-
-    // If no specific content found, get body text
-    if (!content) {
-      content = $('body').text().trim();
-    }
-
-    // Clean up the content
-    content = content
-      .replace(/\s+/g, ' ')
-      .replace(/\n+/g, '\n')
-      .trim();
-
-    return NextResponse.json({ content });
   } catch (error) {
     console.error('Error fetching article:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch article content' },
-      { status: 500 }
-    );
+    return errorResponse('Failed to fetch article content', 500)
   }
 } 

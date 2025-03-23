@@ -1,22 +1,28 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { summarizeArticle } from '@/utils/summarize';
 import { fetchArticleText } from '@/utils/fetchArticle';
-import { saveSummary } from '@/utils/firestore';
 import { auth } from '@/firebaseConfig';
 import { User } from 'firebase/auth';
 import Auth from '@/components/Auth';
+import ArticleProcessor from '@/components/ArticleProcessor';
+import ArticleResult from '@/components/ArticleResult';
+import { Highlight } from '@/types/highlight';
+import { Summary } from '@/types/summary';
+import { toast } from "react-hot-toast";
+
+
+type ProcessingResult = Highlight | Summary;
 
 export default function Home() {
   const [input, setInput] = useState('');
   const [url, setUrl] = useState('');
-  const [summary, setSummary] = useState('');
+  const [result, setResult] = useState<ProcessingResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [saveSuccess, setSaveSuccess] = useState(false);
   const [inputType, setInputType] = useState<'text' | 'url'>('text');
   const [user, setUser] = useState<User | null>(null);
+  const [processingType, setProcessingType] = useState<'highlights' | 'summary'>('highlights');
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -25,6 +31,22 @@ export default function Home() {
 
     return () => unsubscribe();
   }, []);
+
+  const handleResult = async (result: ProcessingResult, type: 'highlights' | 'summary') => {
+    
+    
+    try {
+      setResult(result);
+      setProcessingType(type);
+
+      toast.success(type === 'highlights' ? "Highlights saved successfully" : "Summary saved successfully");
+      
+    } catch (err) {
+      console.error('Error saving result:', err);
+      toast.error("Failed to save summary or highlights");
+
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,28 +57,18 @@ export default function Home() {
 
     setLoading(true);
     setError('');
-    setSummary('');
-    setSaveSuccess(false);
+    setResult(null);
 
     try {
-      let textToSummarize = input;
+      let textToProcess = input;
       
       if (inputType === 'url' && url) {
-        textToSummarize = await fetchArticleText(url);
+        textToProcess = await fetchArticleText(url);
       }
 
-      const result = await summarizeArticle(textToSummarize);
-      setSummary(result);
-
-      // Save the summary automatically
-      await saveSummary(
-        textToSummarize,
-        result,
-        inputType === 'url' ? url : undefined
-      );
-      setSaveSuccess(true);
+      setInput(textToProcess);
     } catch (err) {
-      setError('Failed to generate summary. Please try again.');
+      setError('Failed to fetch article. Please try again.');
       console.error(err);
     } finally {
       setLoading(false);
@@ -117,22 +129,25 @@ export default function Home() {
                       required
                     />
                   ) : (
-                    <input
-                      type="url"
-                      value={url}
-                      onChange={(e) => setUrl(e.target.value)}
-                      placeholder="Enter article URL..."
-                      className="w-full p-4 border border-gray-200 rounded-lg text-black focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    />
+                    <>
+                      <input
+                        type="url"
+                        value={url}
+                        onChange={(e) => setUrl(e.target.value)}
+                        placeholder="Enter article URL..."
+                        className="w-full p-4 border border-gray-200 rounded-lg text-black focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
+                      />
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 disabled:bg-blue-300 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {loading ? 'Loading...' : 'Fetch from URL'}
+                      </button>
+                    </>
                   )}
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 disabled:bg-blue-300 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {loading ? 'Generating Summary...' : 'Generate Summary'}
-                  </button>
+                  
                 </div>
               </form>
             </div>
@@ -143,24 +158,22 @@ export default function Home() {
               </div>
             )}
 
-            {saveSuccess && (
-              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6">
-                Summary saved successfully!
+            {input && (
+              <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+                <ArticleProcessor
+                  article={input}
+                  url={inputType === 'url' ? url : null}
+                  onResult={handleResult}
+                />
               </div>
             )}
 
-            {summary && (
+            {result && (
               <div className="bg-white rounded-lg shadow-sm p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-2xl font-semibold text-gray-900">Summary</h2>
-                </div>
-                <div className="prose prose-lg max-w-none text-gray-600">
-                  {summary.split('\n').map((paragraph, index) => (
-                    <p key={index} className="mb-4">
-                      {paragraph}
-                    </p>
-                  ))}
-                </div>
+                <ArticleResult
+                  result={result}
+                  type={processingType}
+                />
               </div>
             )}
           </>
