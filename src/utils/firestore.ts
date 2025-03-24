@@ -1,7 +1,8 @@
 // firestore.ts
 import { db } from "@/firebaseConfig";
-import { collection, addDoc, serverTimestamp, getDocs, query, where } from "firebase/firestore";
-import { Highlight } from "@/types/highlight";
+import { collection, addDoc, serverTimestamp, getDocs, query, where, orderBy } from "firebase/firestore";
+import { Highlight, FirestoreHighlight } from "@/types/highlight";
+import { FirestoreSummary } from "@/types/summary";
 
 interface SaveSummaryParams {
     userId: string;
@@ -28,6 +29,7 @@ export async function saveSummary({
             originalText,
             summary,
             createdAt: serverTimestamp(),
+            createdAtMs: Date.now(),
             userId,
             url
         };
@@ -51,6 +53,7 @@ export async function saveHighlights({
             originalText,
             highlights,
             createdAt: serverTimestamp(),
+            createdAtMs: Date.now(),
             userId,
             url
         };
@@ -63,14 +66,19 @@ export async function saveHighlights({
     }
 }
 
-export async function getSummariesByUser(userId: string) {
+export async function getSummariesByUser(userId: string): Promise<FirestoreSummary[]> {
     try {
-        const q = query(collection(db, "summaries"), where("userId", "==", userId));
+        // TODO:order by createdAtMs after storing more articles for test data
+        const q = query(
+            collection(db, "summaries"),
+            where("userId", "==", userId),
+            orderBy("createdAt", "desc")
+        );
         const querySnapshot = await getDocs(q);
         const summaries = querySnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
-        }));
+        })) as FirestoreSummary[];
         return summaries;
     } catch (error) {
         console.error("Error fetching summaries:", error);
@@ -78,14 +86,21 @@ export async function getSummariesByUser(userId: string) {
     }
 }
 
-export async function getHighlightsByUser(userId: string) {
+export async function getHighlightsByUser(userId: string): Promise<FirestoreHighlight[]> {
     try {
-        const q = query(collection(db, "highlights"), where("userId", "==", userId));
+        // TODO:order by createdAtMs after storing more articles for test data
+
+        const q = query(
+            collection(db, "highlights"),
+            where("userId", "==", userId),
+            orderBy("createdAt", "desc")
+        );
         const querySnapshot = await getDocs(q);
         const highlights = querySnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
-        }));
+        })) as FirestoreHighlight[];
+
         return highlights;
     } catch (error) {
         console.error("Error fetching highlights:", error);

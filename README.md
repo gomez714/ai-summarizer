@@ -1,30 +1,55 @@
 # AI Article Summarizer
 
-A Chrome extension that uses AI to generate concise summaries of articles. Built with Next.js, Firebase, and OpenAI.
+A powerful Chrome extension that leverages advanced AI to transform how you read and understand articles. Built with Next.js, Firebase, and OpenAI's GPT-4, this tool provides intelligent summaries and key highlights of any article you're reading.
 
 > ⚠️ **Under Development**: This project is currently in active development. Features and functionality may change.
 
 ## Features
 
-- Google Authentication
-- Article text summarization using GPT-4
-- URL-based article fetching
-- Save summaries to Firebase
-- Clean, modern UI
+- **Smart Summarization**
+  - Generate concise summaries using GPT-4
+  - Extract key highlights and main points
+  - Identify important quotes
+  - Process both text input and URL-based articles
+
+- **User Experience**
+  - Clean, modern UI with Tailwind CSS
+  - Real-time processing with loading states
+  - Toast notifications for user feedback
+  - Responsive design for all devices
+
+- **Authentication & Storage**
+  - Google Authentication integration
+  - Secure Firebase storage for summaries
+  - Personal history tracking
+  - Cross-device sync (coming soon)
+
+- **Article Processing**
+  - URL-based article fetching with Mercury Parser
+  - Text input support for custom content
+  - Automatic content extraction
+  - Source attribution and linking
 
 ## Tech Stack
 
-- Next.js 14
-- TypeScript
-- Firebase (Auth & Firestore)
-- OpenAI API
-- Tailwind CSS
+- **Frontend**
+  - Next.js 14 with App Router
+  - TypeScript for type safety
+  - Tailwind CSS for styling
+  - Mantine UI components
+  - React Hot Toast for notifications
+
+- **Backend**
+  - Firebase Authentication
+  - Firestore Database
+  - OpenAI GPT-4 API
+  - Mercury Parser for article extraction
 
 ## Prerequisites
 
 - Node.js 18+ and npm
-- Firebase project
-- OpenAI API key
+- Firebase project with Authentication and Firestore enabled
+- OpenAI API key with GPT-4 access
 
 ## Environment Variables
 
@@ -78,7 +103,15 @@ src/
 - [x] URL-based Article Fetching
 - [x] Summary Storage
 
-### Phase 2: Chrome Extension Development
+### Phase 2: Enhanced Features
+- [x] History
+  - [x] User's saved summaries view
+  - [x] Summary management
+- [x] Highlight
+  - [x] Key highlights extraction
+  - [ ] In-page highlighting
+
+### Phase 3: Chrome Extension Development
 - [ ] Chrome Extension API Integration
   - [ ] manifest.json setup with permissions
   - [ ] Browser action for page summarization
@@ -86,14 +119,6 @@ src/
 - [ ] Extension-Backend Connection
   - [ ] Firebase integration
   - [ ] Cross-device sync
-
-### Phase 3: Enhanced Features
-- [ ] History
-  - [ ] User's saved summaries view
-  - [ ] Summary management
-- [ ] Highlight
-  - [ ] Key highlights extraction
-  - [ ] In-page highlighting
 
 ### Phase 4: Premium Features
 - [ ] Extended Summaries
@@ -121,3 +146,10 @@ src/
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- OpenAI for providing the GPT-4 API
+- Firebase for authentication and database services
+- Mercury Parser for article content extraction
+- The Next.js team for the amazing framework

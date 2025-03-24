@@ -1,36 +1,41 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/firebaseConfig';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { FirestoreSummary } from '@/types/summary';
+import { FirestoreHighlight } from '@/types/highlight';
+import { getSummariesByUser, getHighlightsByUser } from '@/utils/firestore';
+import { validateAuth } from '@/utils/auth';
+import { errorResponse } from '@/utils/errors';
 
-export async function GET(request: Request) {
+
+interface HistoryResponse {
+  summaries: FirestoreSummary[];
+  highlights: FirestoreHighlight[];
+}
+
+export async function GET(req: Request) {
   try {
-    // Get the user ID from the request headers
-    const userId = request.headers.get('x-user-id');
+    const userId = await validateAuth(req);
     
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'User ID is required' },
-        { status: 401 }
-      );
+    const { searchParams } = new URL(req.url);
+    const type = searchParams.get('type') || 'all'; // 'all', 'summaries', or 'highlights'
+
+    const response: HistoryResponse = {
+      summaries: [],
+      highlights: [],
+    };
+
+    // Fetch summaries if requested
+    if (type === 'all' || type === 'summaries') {
+      response.summaries = await getSummariesByUser(userId);
     }
 
-    // Query Firestore for the user's summaries
-    const summariesRef = collection(db, 'summaries');
-    const q = query(summariesRef, where('userId', '==', userId));
-    const querySnapshot = await getDocs(q);
+    // Fetch highlights if requested
+    if (type === 'all' || type === 'highlights') {
+      response.highlights = await getHighlightsByUser(userId);
+    }
 
-    // Convert the query snapshot to an array of summaries
-    const summaries = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-
-    return NextResponse.json({ summaries });
+    return NextResponse.json(response);
   } catch (error) {
-    console.error('Error fetching summaries:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch summaries' },
-      { status: 500 }
-    );
+    console.error('Error fetching history:', error);
+    return errorResponse('Failed to fetch history', 500);
   }
 } 

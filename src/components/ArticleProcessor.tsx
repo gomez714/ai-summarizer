@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { auth } from '@/firebaseConfig';
 import { Highlight } from '@/types/highlight';
 import { Summary } from '@/types/summary';
+import { useArticleProcessor } from '@/hooks/useArticleProcessor';
 
 type ProcessingResult = Highlight | Summary;
 
@@ -11,51 +11,14 @@ interface ArticleProcessorProps {
   onResult: (result: ProcessingResult, type: 'highlights' | 'summary') => void;
 }
 
-export default function ArticleProcessor({ article, url,onResult }: ArticleProcessorProps) {
+export default function ArticleProcessor({ article, url, onResult }: ArticleProcessorProps) {
   const [type, setType] = useState<'highlights' | 'summary'>('highlights');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  
+  const { process, isLoading, error } = useArticleProcessor({ onResult });
 
-  const handleTypeChange = (newType: 'highlights' | 'summary') => {
-    setType(newType);
-    setError(null);
-  };
-
-  const processArticle = async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const endpoint = type === 'highlights' ? '/api/highlight' : '/api/summarize';
-      
-      // Get the current user's ID token
-      const user = auth.currentUser;
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-      const token = await user.getIdToken();
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ text: article, url }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to process article');
-      }
-
-      const result = await response.json();
-      onResult(result, type);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setIsLoading(false);
-    }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await process(article, url ?? null, type);
   };
 
   return (
@@ -66,7 +29,7 @@ export default function ArticleProcessor({ article, url,onResult }: ArticleProce
             type="radio"
             value="highlights"
             checked={type === 'highlights'}
-            onChange={() => handleTypeChange('highlights')}
+            onChange={() => setType('highlights')}
             className="form-radio"
           />
           <span>Highlights</span>
@@ -76,7 +39,7 @@ export default function ArticleProcessor({ article, url,onResult }: ArticleProce
             type="radio"
             value="summary"
             checked={type === 'summary'}
-            onChange={() => handleTypeChange('summary')}
+            onChange={() => setType('summary')}
             className="form-radio"
           />
           <span>Summary</span>
@@ -84,7 +47,7 @@ export default function ArticleProcessor({ article, url,onResult }: ArticleProce
       </div>
 
       <button
-        onClick={processArticle}
+        onClick={handleSubmit}
         disabled={isLoading}
         className={`px-4 py-2 rounded-md ${
           isLoading

@@ -10,7 +10,8 @@ import ArticleResult from '@/components/ArticleResult';
 import { Highlight } from '@/types/highlight';
 import { Summary } from '@/types/summary';
 import { toast } from "react-hot-toast";
-
+import Link from 'next/link';
+import { Paper, Button } from '@mantine/core';
 
 type ProcessingResult = Highlight | Summary;
 
@@ -33,7 +34,6 @@ export default function Home() {
   }, []);
 
   const handleResult = async (result: ProcessingResult, type: 'highlights' | 'summary') => {
-    
     
     try {
       setResult(result);
@@ -82,22 +82,28 @@ export default function Home() {
           <h1 className="text-4xl font-bold text-gray-900">
             AI Article Summarizer
           </h1>
-          <Auth />
+          <div className="flex items-center gap-4">
+            <Link
+              href="/history"
+              className="text-blue-600 font-medium hover:underline transition"
+            >
+              View History
+            </Link>
+            <Auth />
+          </div>
         </div>
 
         {!user ? (
-          <div className="bg-white rounded-lg shadow-sm p-6 text-center">
+          <Paper className='shadow-sm p-6 rounded-lg text-center border border-gray-200'>
             <h2 className="text-xl text-gray-700 mb-4">
               Please sign in to use the summarizer
             </h2>
-            <Auth />
-          </div>
+          </Paper>
         ) : (
           <>
-            <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+            <Paper className='shadow-sm p-6 rounded-lg text-center border border-gray-200'>
               <div className="flex justify-center gap-4 mb-6">
-                <button
-                  onClick={() => setInputType('text')}
+                <Button  onClick={() => setInputType('text')}
                   className={`px-4 py-2 rounded-lg transition-colors ${
                     inputType === 'text'
                       ? 'bg-blue-500 text-white'
@@ -105,9 +111,8 @@ export default function Home() {
                   }`}
                 >
                   Paste Text
-                </button>
-                <button
-                  onClick={() => setInputType('url')}
+                </Button>
+                <Button  onClick={() => setInputType('url')}
                   className={`px-4 py-2 rounded-lg transition-colors ${
                     inputType === 'url'
                       ? 'bg-blue-500 text-white'
@@ -115,7 +120,7 @@ export default function Home() {
                   }`}
                 >
                   Enter URL
-                </button>
+                </Button>
               </div>
 
               <form onSubmit={handleSubmit}>
@@ -150,7 +155,8 @@ export default function Home() {
                   
                 </div>
               </form>
-            </div>
+            </Paper>
+
 
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
@@ -159,22 +165,22 @@ export default function Home() {
             )}
 
             {input && (
-              <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+              <Paper className="bg-white rounded-lg shadow-sm p-6 mb-8">
                 <ArticleProcessor
                   article={input}
                   url={inputType === 'url' ? url : null}
                   onResult={handleResult}
                 />
-              </div>
+              </Paper>
             )}
 
             {result && (
-              <div className="bg-white rounded-lg shadow-sm p-6">
+              <Paper className="bg-white rounded-lg shadow-sm p-6">
                 <ArticleResult
                   result={result}
                   type={processingType}
                 />
-              </div>
+              </Paper>
             )}
           </>
         )}
